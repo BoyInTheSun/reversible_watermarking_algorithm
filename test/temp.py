@@ -13,6 +13,5 @@ retval,dst = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU) #使用大津算法进
 
 cv2.namedWindow("dst", 2)   #创建一个窗口
 cv2.imshow("dst", dst)
-
-
+print('阈值是：', retval)
 cv2.waitKey()
