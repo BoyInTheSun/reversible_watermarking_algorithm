@@ -8,4 +8,10 @@
 
 ## 可视化
 
+# 用到的库
+`openCV`和`QT5`
+```shell
+pip install opencv-python==4.4.0.44
+pip install pyqt5==5.15.1
+```
 # 参考文献
