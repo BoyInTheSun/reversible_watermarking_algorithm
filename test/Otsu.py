@@ -3,7 +3,7 @@
 import cv2  #导入opencv模块
 import os
 import matplotlib.pyplot as plt
-IMG = 'pic3.jpg'
+IMG = 'pic4.jpg'
 
 
 img = cv2.imread(os.path.join("image", IMG))  # 导入图片，图片放在程序所在目录
