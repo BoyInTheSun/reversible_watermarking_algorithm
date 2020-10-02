@@ -18,6 +18,7 @@ cv2.namedWindow("dst")  # 创建一个窗口
 cv2.imshow("dst", dst)
 print('阈值是：', retval)
 
+# 计算有无零点
 count = dict()
 for i in range(0, 256):
     count[i] = 0
@@ -27,8 +28,21 @@ for row in gray:
 for i in count:
     if count[i] == 0:
         print('有零点: 灰度为{}的像素有{}'.format(i, count[i]))
-else:
-    print('无零点')
+
+# 添加边框
+dst1 = cv2.copyMakeBorder(dst, 1, 1, 1, 1, cv2.BORDER_CONSTANT, None, [0, 0, 0])
+cv2.namedWindow("dst1")  # 创建一个窗口
+cv2.imshow("dst1", dst1)
+# 输出到csv文件
+f = open('temp.csv', 'w')
+for row in dst1:
+    for col in row:
+        f.write(str(0 if col == 0 else 1))
+        f.write(',')
+    f.write('\n')
+f.close()
+
+
 plt.hist(gray.ravel(), 256, [0, 256])
 plt.axvline(retval, color='red')
 plt.show()
