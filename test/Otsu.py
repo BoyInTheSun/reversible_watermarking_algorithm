@@ -3,7 +3,7 @@
 import cv2  #导入opencv模块
 import os
 import matplotlib.pyplot as plt
-IMG = 'pic4.jpg'
+IMG = 'pic1.jpg'
 
 
 img = cv2.imread(os.path.join("image", IMG))  # 导入图片，图片放在程序所在目录
@@ -18,6 +18,17 @@ cv2.namedWindow("dst")  # 创建一个窗口
 cv2.imshow("dst", dst)
 print('阈值是：', retval)
 
+count = dict()
+for i in range(0, 256):
+    count[i] = 0
+for row in gray:
+    for col in row:
+        count[col] += 1
+for i in count:
+    if count[i] == 0:
+        print('有零点: 灰度为{}的像素有{}'.format(i, count[i]))
+else:
+    print('无零点')
 plt.hist(gray.ravel(), 256, [0, 256])
 plt.axvline(retval, color='red')
 plt.show()
