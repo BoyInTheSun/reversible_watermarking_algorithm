@@ -3,7 +3,7 @@
 import cv2  #导入opencv模块
 import os
 import matplotlib.pyplot as plt
-IMG = 'pic1.jpg'
+IMG = 'pic4.jpg'
 
 
 img = cv2.imread(os.path.join("image", IMG))  # 导入图片，图片放在程序所在目录
@@ -20,6 +20,7 @@ print('阈值是：', retval)
 
 # 计算有无零点
 count = dict()
+count_zero = list()
 for i in range(0, 256):
     count[i] = 0
 for row in gray:
@@ -27,7 +28,12 @@ for row in gray:
         count[col] += 1
 for i in count:
     if count[i] == 0:
-        print('有零点: 灰度为{}的像素有{}'.format(i, count[i]))
+        count_zero.append(i)
+if len(count_zero) == 0:
+    print('无零点')
+else:
+    print('有零点: 其灰度为', count_zero)
+
 
 # 添加边框
 dst1 = cv2.copyMakeBorder(dst, 1, 1, 1, 1, cv2.BORDER_CONSTANT, None, [0, 0, 0])
@@ -41,6 +47,8 @@ for row in dst1:
         f.write(',')
     f.write('\n')
 f.close()
+# 保存到bmp
+cv2.imwrite('temp.bmp', dst1)
 
 
 plt.hist(gray.ravel(), 256, [0, 256])
