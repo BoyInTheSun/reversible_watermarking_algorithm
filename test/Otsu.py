@@ -49,7 +49,7 @@ for row in dst1:
 f.close()
 # 保存到bmp
 cv2.imwrite('temp.bmp', dst1)
-
+print(img)
 
 plt.hist(gray.ravel(), 256, [0, 256])
 plt.axvline(retval, color='red')
