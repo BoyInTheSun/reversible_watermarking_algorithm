@@ -148,8 +148,7 @@ for row in binary_temp:
         f.write(',')
     f.write('\n')
 f.close()
-
-cv2.waitKey()
+print('封闭边界有：', count)
 # cv2.imwrite('temp.bmp', binary_with_border)  # 输出图片
 # cv2.imshow("binary_with_border", binary_with_border)
 # cv2.waitKey()
