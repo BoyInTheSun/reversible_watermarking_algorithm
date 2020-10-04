@@ -2,14 +2,13 @@ import cv2
 import os
 import sys
 import numpy as np
-import threading
 
 # 调整栈大小
 sys.setrecursionlimit(100000)
 IMG = os.path.join('test', 'image', 'pic1.jpg')
 SPEED = 50  # 显示速度，最慢为1，最快无穷
 ZOOM = 2  # 显示缩放倍数，1为原始大小
-IS_SHOW = True
+IS_SHOW = False
 
 binary_temp = None
 step = 0
@@ -147,7 +146,10 @@ for row in binary_with_border:
 f.close()
 binary_temp = binary_with_border
 
+# 递归标记边界
 border_following(1, 1, 1, 1, 0, True)
+# 裁剪掉之前添加的最外一圈
+binary_temp = binary_temp[1: -1][1: -1]
 # print(after_border_following)
 # 输出到csv文件
 f = open('after_border_following.csv', 'w')
