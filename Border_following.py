@@ -1,3 +1,5 @@
+#!/usr/bin/python3.6
+
 import cv2
 import os
 import sys
@@ -6,10 +8,11 @@ import numpy as np
 # 调整栈大小
 sys.setrecursionlimit(100000)
 IMG = os.path.join('test', 'image', 'pic1.jpg')
-SPEED = 50  # 显示速度，最慢为1，最快无穷
+SPEED = 200  # 显示速度，最慢为1，最快无穷
 ZOOM = 2  # 显示缩放倍数，1为原始大小
 IS_SHOW = False
 
+is_done = False
 binary_temp = None
 step = 0
 step_each = 0
@@ -42,6 +45,7 @@ def show_step(time):
 
 # binary_temp为带边框的二值图，m, n为横纵坐标，now为当前位移，first为false代表该点为起点
 def border_following(m, n, start_m, start_n, now, is_first):
+    global is_done
     global binary_temp
     global count
     global step
@@ -74,7 +78,7 @@ def border_following(m, n, start_m, start_n, now, is_first):
                     while True:
                         m += 1
                         # 到最右跳出
-                        if m == len(binary_temp[0]) - 2:
+                        if m == len(binary_temp[0]) - 1:
                             break
                         # 遇到-2跳出
                         if binary_temp[n, m] == -2:
@@ -90,7 +94,10 @@ def border_following(m, n, start_m, start_n, now, is_first):
                     return
                 if binary_temp[n, m] == 1:
                     border_following(m, n, m, n, 0, True)
+                    if is_done:
+                        return
     if is_first:
+        # print(m, n, is_done)
         is_first = False
     # 开始新的一轮
     elif n == start_n and m == start_m:
@@ -115,16 +122,21 @@ def border_following(m, n, start_m, start_n, now, is_first):
                 n += 1
             if n == len(binary_temp) - 1:
                 count[len(count)] = step_each
+                is_done = True
                 return
             if binary_temp[n, m] == 1:
                 count[len(count)] = step_each
                 step_each = 0
                 border_following(m, n, m, n, 0, True)
+                if is_done:
+                    return
     for i in range(now - 1, now - 9, -1):
         # 逆时针找到第一个非零点作为下个中心
         temp = binary_temp[n + move_y[i % 8], m + move_x[i % 8]]
         if temp != 0:
             border_following(m + move_x[i % 8], n + move_y[i % 8], start_m, start_n, move_now(-move_x[i % 8], -move_y[i % 8]), is_first)
+            if is_done:
+                return
             break
 
 img = cv2.imread(IMG)
@@ -149,7 +161,7 @@ binary_temp = binary_with_border
 # 递归标记边界
 border_following(1, 1, 1, 1, 0, True)
 # 裁剪掉之前添加的最外一圈
-binary_temp = binary_temp[1: -1][1: -1]
+binary_temp = binary_temp[1: -1, 1: -1]
 # print(after_border_following)
 # 输出到csv文件
 f = open('after_border_following.csv', 'w')
