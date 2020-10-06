@@ -8,11 +8,13 @@ import numpy as np
 # 调整栈大小
 sys.setrecursionlimit(1000000)
 IMG = os.path.join('test', 'image', 'pic1.jpg')
-SPEED = 50  # 显示速度，最慢为1，最快无穷
+SPEED = 500  # 显示速度，最慢为1，最快无穷
 ZOOM = 2  # 显示缩放倍数，1为原始大小
-IS_SHOW = True
+IS_SHOW = False
+MIN_STEP = 5  # 边界像素数小于该数则舍弃该区域。建议取值在4以上，过小会导致复杂度过高
 
 binary_temp = None
+binary_next = None
 img_rgba = None
 step = 0
 count = dict()
@@ -139,9 +141,17 @@ def border_following(m, n, start_m, start_n, now, is_first):
 def flood_fill():
     global imgs
     global binary_temp
+    global binary_next
     h = len(binary_temp)
     w = len(binary_temp[0])
+    if binary_next is None:
+        binary_next = binary_temp.copy()
     temp = binary_temp.copy()
+    # 去除之前已经抠掉的点
+    for i in range(1, len(temp) - 1):
+        for j in range(1, len(temp[0]) - 1):
+            if binary_next[i, j] == -1:
+                temp[i, j] = 0
     # 左上角为起点
     aim_list = [(0, 0)]
     while len(aim_list) > 0:
@@ -156,10 +166,13 @@ def flood_fill():
         if c < w - 1 and (temp[r][c + 1] == 0 or temp[r][c + 1] == 1):
             aim_list.append((r, c + 1))
     # 抠图
-    img_temp = img_rgba.copy()
+    img_temp = np.zeros((len(img_rgba), len(img_rgba[0]), 4)).astype('uint8')
     for i in range(1, len(temp) - 1):
         for j in range(1, len(temp[0]) - 1):
             if temp[i, j] != -1:
+                img_temp[i - 1, j - 1] = img_rgba[i - 1, j - 1]
+                # 下次抠图时扔掉这次已经抠掉的
+                binary_next[i, j] = -1
                 if temp[i, j] == 0:
                     temp[i, j] = 3
                     binary_temp[i, j] = 3
@@ -198,6 +211,7 @@ def find_center(m, n):
         if binary_temp[n, m] == 1:
             return m, n
 
+
 def border_following(m, n):
     global binary_temp
     global count
@@ -234,7 +248,7 @@ def border_following(m, n):
         else:
             binary_temp[n, m] = -2
             count[len(count)] = step_each
-            if step_each > 8:
+            if step_each > MIN_STEP:
                 flood_fill()
             m, n = find_center(m, n)
             # 结束
@@ -253,7 +267,7 @@ def border_following(m, n):
         # 回到起点时进行下一轮
         if n == start_n and m == start_m:
             count[len(count)] = step_each
-            if step_each > 8:
+            if step_each > MIN_STEP:
                 flood_fill()
             m, n = find_center(m, n)
             # 结束
@@ -265,6 +279,7 @@ def border_following(m, n):
 
 img = cv2.imread(IMG)
 img_rgba = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
+cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 threshold, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU)
 for i in range(len(binary)):
@@ -299,6 +314,9 @@ for row in binary_temp:
 f.close()
 print('标记了{}个像素，共{}轮'.format(step, len(count)))
 print('其中 ', count)
+print('传出图像{}个'.format(len(imgs)))
+for i in range(len(imgs)):
+    cv2.imwrite(os.path.join('test', 'output', 'img{}.bmp'.format(i)), imgs[i])
 show_step(0)
 
 
