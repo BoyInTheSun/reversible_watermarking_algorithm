@@ -6,15 +6,17 @@ import sys
 import numpy as np
 
 # 调整栈大小
-sys.setrecursionlimit(1000000000)
+sys.setrecursionlimit(1000000)
 IMG = os.path.join('test', 'image', 'pic1.jpg')
-SPEED = 1000  # 显示速度，最慢为1，最快无穷
+SPEED = 50  # 显示速度，最慢为1，最快无穷
 ZOOM = 2  # 显示缩放倍数，1为原始大小
 IS_SHOW = True
 
 binary_temp = None
+img_rgba = None
 step = 0
 count = dict()
+imgs = list()
 move_x = [-1, -1, 0, 1, 1, 1, 0, -1]
 move_y = [0, -1, -1, -1, 0, 1, 1, 1]
 
@@ -25,7 +27,8 @@ def show_step(time):
     y = len(binary_temp)
     # 新建RGB的numpy数组
     new = np.full((y, x, 3), 255).astype('uint8')
-    a = {0: [0, 0, 0], 1: [255, 255, 255], 2: [255, 0, 0], -2: [0, 0, 255]}
+    # 0,1为原始，2,-2为边界，3,4为内部
+    a = {0: [0, 0, 0], 1: [255, 255, 255], 2: [255, 0, 0], -2: [0, 0, 255], 3: [0, 70, 0], 4: [0, 255, 0]}
     for i in range(len(binary_temp)):
         for j in range(len(binary_temp[i])):
             new[i, j] = a[binary_temp[i, j]]
@@ -133,6 +136,42 @@ def border_following(m, n, start_m, start_n, now, is_first):
             break
 '''
 
+def flood_fill():
+    global imgs
+    global binary_temp
+    h = len(binary_temp)
+    w = len(binary_temp[0])
+    temp = binary_temp.copy()
+    # 左上角为起点
+    aim_list = [(0, 0)]
+    while len(aim_list) > 0:
+        (r, c) = aim_list.pop()
+        temp[r][c] = -1
+        if r > 0 and (temp[r - 1][c] == 0 or temp[r - 1][c] == 1):
+            aim_list.append((r - 1, c))
+        if c > 0 and (temp[r][c - 1] == 0 or temp[r][c - 1] == 1):
+            aim_list.append((r, c - 1))
+        if r < h - 1 and (temp[r + 1][c] == 0 or temp[r + 1][c] == 1):
+            aim_list.append((r + 1, c))
+        if c < w - 1 and (temp[r][c + 1] == 0 or temp[r][c + 1] == 1):
+            aim_list.append((r, c + 1))
+    # 抠图
+    img_temp = img_rgba.copy()
+    for i in range(1, len(temp) - 1):
+        for j in range(1, len(temp[0]) - 1):
+            if temp[i, j] != -1:
+                if temp[i, j] == 0:
+                    temp[i, j] = 3
+                    binary_temp[i, j] = 3
+                if temp[i, j] == 1:
+                    temp[i, j] = 4
+                    binary_temp[i, j] = 4
+            else:
+                # 注意，此处i-1代表错位，temp有外圈0
+                img_temp[i - 1, j - 1] = [0, 0, 0, 0]
+    imgs.append(img_temp)
+
+
 def find_center(m, n):
     while True:
         # 如果遇到2，跳到右侧的-2
@@ -166,7 +205,7 @@ def border_following(m, n):
     step_each = 0
     now = 0
     # 找中心
-    if binary_temp[n, m] == 0:
+    if binary_temp[n, m] == 0 or binary_temp[n, m] >= 3:
         m, n = find_center(m, n)
         # 结束
         if m is None and n is None:
@@ -195,6 +234,8 @@ def border_following(m, n):
         else:
             binary_temp[n, m] = -2
             count[len(count)] = step_each
+            if step_each > 8:
+                flood_fill()
             m, n = find_center(m, n)
             # 结束
             if m is None and n is None:
@@ -212,6 +253,8 @@ def border_following(m, n):
         # 回到起点时进行下一轮
         if n == start_n and m == start_m:
             count[len(count)] = step_each
+            if step_each > 8:
+                flood_fill()
             m, n = find_center(m, n)
             # 结束
             if m is None and n is None:
@@ -221,6 +264,7 @@ def border_following(m, n):
 
 
 img = cv2.imread(IMG)
+img_rgba = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
 gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 threshold, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU)
 for i in range(len(binary)):
