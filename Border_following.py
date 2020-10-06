@@ -316,7 +316,7 @@ print('标记了{}个像素，共{}轮'.format(step, len(count)))
 print('其中 ', count)
 print('传出图像{}个'.format(len(imgs)))
 for i in range(len(imgs)):
-    cv2.imwrite(os.path.join('test', 'output', 'img{}.bmp'.format(i)), imgs[i])
+    cv2.imwrite(os.path.join('test', 'output', 'img{}.png'.format(i)), imgs[i])
 show_step(0)
 
 
