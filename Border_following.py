@@ -5,17 +5,19 @@ import os
 import sys
 import numpy as np
 
+
+
 # 调整栈大小
 sys.setrecursionlimit(1000000)
-IMG = os.path.join('test', 'image', 'pic1.jpg')
 SPEED = 500  # 显示速度，最慢为1，最快无穷
 ZOOM = 2  # 显示缩放倍数，1为原始大小
 IS_SHOW = False
-MIN_STEP = 5  # 边界像素数小于该数则舍弃该区域。建议取值在4以上，过小会导致复杂度过高
+# MIN_STEP = 5  # 边界像素数小于该数则舍弃该区域。建议取值在4以上，过小会导致复杂度过高
 
+
+MIN_STEP = None
 binary_temp = None
 binary_next = None
-img_rgba = None
 step = 0
 count = dict()
 imgs = list()
@@ -166,11 +168,12 @@ def flood_fill():
         if c < w - 1 and (temp[r][c + 1] == 0 or temp[r][c + 1] == 1):
             aim_list.append((r, c + 1))
     # 抠图
-    img_temp = np.zeros((len(img_rgba), len(img_rgba[0]), 4)).astype('uint8')
+    img_temp = np.zeros((len(temp) - 2, len(temp[0]) - 2)).astype('uint8')
     for i in range(1, len(temp) - 1):
         for j in range(1, len(temp[0]) - 1):
             if temp[i, j] != -1:
-                img_temp[i - 1, j - 1] = img_rgba[i - 1, j - 1]
+                # 有用为黑
+                img_temp[i - 1, j - 1] = 0
                 # 下次抠图时扔掉这次已经抠掉的
                 binary_next[i, j] = -1
                 if temp[i, j] == 0:
@@ -181,7 +184,8 @@ def flood_fill():
                     binary_temp[i, j] = 4
             else:
                 # 注意，此处i-1代表错位，temp有外圈0
-                img_temp[i - 1, j - 1] = [0, 0, 0, 0]
+                # 无用为白
+                img_temp[i - 1, j - 1] = 255
     imgs.append(img_temp)
 
 
@@ -276,49 +280,70 @@ def border_following(m, n):
             border_following(m, n)
             return
 
+def main(img_gray, min_step=5):
+    global binary_temp
+    global binary_next
+    global step
+    global count
+    global imgs
+    global MIN_STEP
+    MIN_STEP = min_step
+    binary_temp = None
+    binary_next = None
+    step = 0
+    count = dict()
+    imgs = list()
+    # img = cv2.imread(IMG)
+    # img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    threshold, binary = cv2.threshold(img_gray, 0, 255, cv2.THRESH_OTSU)
+    for i in range(len(binary)):
+        for j in range(len(binary[i])):
+            if binary[i, j] == 255:
+                binary[i, j] = 1
+    # 向外填充一像素
+    binary_with_border = cv2.copyMakeBorder(binary, 1, 1, 1, 1, cv2.BORDER_CONSTANT, None, [0, 0, 0])
+    binary_with_border = binary_with_border.astype(np.int8)
+    '''
+    # 输出到csv文件
+    f = open('binary_with_border.csv', 'w')
+    for row in binary_with_border:
+        for col in row:
+            f.write(str(col))
+            f.write(',')
+        f.write('\n')
+    f.close()
+    '''
+    binary_temp = binary_with_border
+    # 递归标记边界
+    # border_following(1, 1, 1, 1, 0, True)
+    border_following(1, 1)
+    # 裁剪掉之前添加的最外一圈
+    binary_temp = binary_temp[1: -1, 1: -1]
+    # print(after_border_following)
+    '''
+    # 输出到csv文件
+    f = open('after_border_following.csv', 'w')
+    for row in binary_temp:
+        for col in row:
+            f.write(str(col))
+            f.write(',')
+        f.write('\n')
+    f.close()
+    '''
 
-img = cv2.imread(IMG)
-img_rgba = cv2.cvtColor(img, cv2.COLOR_BGR2BGRA)
-cv2.cvtColor(img, cv2.COLOR_RGBA2GRAY)
-gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-threshold, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU)
-for i in range(len(binary)):
-    for j in range(len(binary[i])):
-        if binary[i, j] == 255:
-            binary[i, j] = 1
-binary_with_border = cv2.copyMakeBorder(binary, 1, 1, 1, 1, cv2.BORDER_CONSTANT, None, [0, 0, 0])
-binary_with_border = binary_with_border.astype(np.int8)
-# 输出到csv文件
-f = open('binary_with_border.csv', 'w')
-for row in binary_with_border:
-    for col in row:
-        f.write(str(col))
-        f.write(',')
-    f.write('\n')
-f.close()
-binary_temp = binary_with_border
-
-# 递归标记边界
-# border_following(1, 1, 1, 1, 0, True)
-border_following(1, 1)
-# 裁剪掉之前添加的最外一圈
-binary_temp = binary_temp[1: -1, 1: -1]
-# print(after_border_following)
-# 输出到csv文件
-f = open('after_border_following.csv', 'w')
-for row in binary_temp:
-    for col in row:
-        f.write(str(col))
-        f.write(',')
-    f.write('\n')
-f.close()
-print('标记了{}个像素，共{}轮'.format(step, len(count)))
-print('其中 ', count)
-print('传出图像{}个'.format(len(imgs)))
-for i in range(len(imgs)):
-    cv2.imwrite(os.path.join('test', 'output', 'img{}.png'.format(i)), imgs[i])
-show_step(0)
-
+    '''
+    print('标记了{}个像素，共{}轮'.format(step, len(count)))
+    print('其中 ', count)
+    print('传出图像{}个'.format(len(imgs)))
+    for i in range(len(imgs)):
+        cv2.imwrite(os.path.join('test', 'output', 'img{}.png'.format(i)), imgs[i])
+    show_step(0)
+    '''
+    # 按值排序，即边界的像素数
+    count_px = dict()
+    for i in range(len(imgs)):
+        count_px[i] = (sum(imgs[i].flatten() == 0))
+    return [imgs[k[0]] for k in sorted(count_px.items(), key=lambda x:x[1], reverse=True)]
 
 
 # cv2.imwrite('temp.bmp', binary_with_border)  # 输出图片
