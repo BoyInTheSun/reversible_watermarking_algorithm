@@ -69,7 +69,7 @@ def finding_max_and_min(img, img1, input_image_path):
                         img[i, j] -= 1
 
     bstring = reading(input_image_path)
-
+    Is_Full = False
     k = 0
     for i in range(height):
         for j in range(width):
@@ -81,10 +81,14 @@ def finding_max_and_min(img, img1, input_image_path):
                         img[i, j] -= 1
                     k += 1
             if k == len(bstring):
+                Is_Full = True
                 break
         if k == len(bstring):
             break
-    return img
+    if Is_Full:
+        return img,k
+    else:
+        return img
 # 提取数据
 def extracting_data(img,img1):
     width = len(img)
