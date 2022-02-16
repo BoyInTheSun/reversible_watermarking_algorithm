@@ -1,3 +1,4 @@
+# 该代码仓库已烂尾，目前仅实现边界追踪部分，未实现水印功能！！！
 # 可视化可逆水印
 
 实现了论文[Border following–based reversible watermarking algorithm for images with resistance to histogram overflowing](https://journals.sagepub.com/doi/10.1177/1550147720917014) 中算法，并实现可视化。
